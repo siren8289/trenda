@@ -1,32 +1,24 @@
 package com.example.service.play.game;
 
-import com.example.service.common.response.ApiResponse;
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/play/games")
+@RequestMapping("/api/games") // "주소/api/games"로 들어오라는 뜻
+@RequiredArgsConstructor
 public class GameController {
-
     private final GameService gameService;
 
-    public GameController(GameService gameService) {
-        this.gameService = gameService;
-    }
-
+    // 모든 게임 보기: GET http://localhost:8080/api/games
     @GetMapping
-    public ApiResponse<List<Game>> list() {
-        return ApiResponse.success(gameService.findAll());
+    public List<Game> getAllGames() {
+        return gameService.findAllGames();
     }
 
+    // 게임 등록하기: POST http://localhost:8080/api/games
     @PostMapping
-    public ApiResponse<Game> create(@Valid @RequestBody Game game) {
-        return ApiResponse.success(gameService.save(game));
+    public Game addGame(@RequestParam String title, @RequestParam String description) {
+        return gameService.createGame(title, description);
     }
 }
-

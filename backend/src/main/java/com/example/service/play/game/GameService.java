@@ -1,31 +1,27 @@
 package com.example.service.play.game;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
-@Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class GameService {
-
     private final GameRepository gameRepository;
 
-    public GameService(GameRepository gameRepository) {
-        this.gameRepository = gameRepository;
-    }
-
-    public List<Game> findAll() {
+    // 1. 모든 게임 목록 가져오기
+    public List<Game> findAllGames() {
         return gameRepository.findAll();
     }
 
-    public Game findById(Long id) {
-        return gameRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
+    // 2. 새로운 게임 저장하기
+    public Game createGame(String title, String description) {
+        Game newGame = new Game(title, description);
+        return gameRepository.save(newGame);
     }
-
-    @Transactional
-    public Game save(Game game) {
-        return gameRepository.save(game);
+    public Game findById(Long gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new EntityNotFoundException("Game not found with id = " + gameId));
     }
 }
-
