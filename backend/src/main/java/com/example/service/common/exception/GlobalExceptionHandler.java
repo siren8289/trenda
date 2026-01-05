@@ -1,25 +1,33 @@
 package com.example.service.common.exception;
 
-import com.example.service.common.response.ApiResponse;
 import com.example.service.common.response.ErrorResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.time.Instant;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ApiResponse<Object>> handleCustomException(CustomException ex) {
-        ErrorResponse error = new ErrorResponse(ex.getStatus().name(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus()).body(ApiResponse.error(error));
+    public ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
+        ErrorResponse error = new ErrorResponse(
+                e.getMessage(),
+                e.getStatus().value(),
+                Instant.now()
+        );
+
+        return ResponseEntity.status(e.getStatus()).body(error);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
-        ErrorResponse error = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.name(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
+    public ResponseEntity<ErrorResponse> handleGeneralException(Exception e) {
+        ErrorResponse error = new ErrorResponse(
+                "Unexpected server error",
+                500,
+                Instant.now()
+        );
+
+        return ResponseEntity.internalServerError().body(error);
     }
 }
-

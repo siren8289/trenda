@@ -1,5 +1,9 @@
 package com.example.service.common.response;
 
-public record ErrorResponse(String code, String message) {
-}
+import java.time.Instant;
 
+public record ErrorResponse(
+        String message,
+        int status,
+        Instant timestamp
+) {}
