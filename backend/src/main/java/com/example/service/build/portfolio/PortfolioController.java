@@ -1,40 +1,24 @@
 package com.example.service.build.portfolio;
 
-import com.example.service.common.response.ApiResponse;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/build/portfolios")
-@Validated
+@RequestMapping("/api/portfolio")
+@RequiredArgsConstructor
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
 
-    public PortfolioController(PortfolioService portfolioService) {
-        this.portfolioService = portfolioService;
-    }
-
-    @GetMapping("/user/{userId}")
-    public ApiResponse<List<Portfolio>> findByUser(@PathVariable Long userId) {
-        return ApiResponse.success(portfolioService.findByUser(userId));
+    @GetMapping("/{userId}")
+    public Portfolio view(@PathVariable Long userId) {
+        return portfolioService.getPortfolio(userId);
     }
 
     @PostMapping
-    public ApiResponse<Portfolio> create(@RequestBody PortfolioRequest request) {
-        return ApiResponse.success(portfolioService.create(
-                request.userId(), request.projectTitle(), request.summary(), request.link()));
+    public Portfolio generate(@RequestParam Long userId,
+                              @RequestParam String title,
+                              @RequestParam String summary) {
+        return portfolioService.createOrUpdatePortfolio(userId, title, summary);
     }
-
-    public record PortfolioRequest(
-            @NotNull Long userId, @NotBlank String projectTitle, @NotBlank String summary, String link) {}
 }
-

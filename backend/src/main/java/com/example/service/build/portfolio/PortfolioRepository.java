@@ -1,9 +1,15 @@
 package com.example.service.build.portfolio;
 
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
-    List<Portfolio> findByUserId(Long userId);
-}
+import java.util.List;
+import java.util.Optional;
 
+public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
+
+    // 프로필에서 목록으로 쓰는 용도
+    List<Portfolio> findByUserId(Long userId);
+
+    // 대표 1개(최신)
+    Optional<Portfolio> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+}
