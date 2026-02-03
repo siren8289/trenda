@@ -33,6 +33,8 @@ build/
 *.rar
 .gradle/
 build/
+!frontend/src/features/build/
+!frontend/src/features/build/**
 !gradle/wrapper/gradle-wrapper.jar
 bin/
 target/
