@@ -1,11 +1,11 @@
 import { Mail, Lock, Chrome, TrendingUp, Github, Facebook, ShieldCheck, User as UserIcon, Building2 } from 'lucide-react';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Checkbox } from '../../ui/checkbox';
-import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
-import { Separator } from '../../ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Checkbox } from '@/ui/checkbox';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
+import { Separator } from '@/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs';
 import { useState } from 'react';
 
 interface LoginViewProps {
