@@ -40,7 +40,7 @@ import {
 } from '../ui/dropdown-menu';
 
 // QuizComponent export
-export { QuizComponent } from "../../src/components/common/QuizComponent";
+export { QuizComponent } from "./QuizComponent";
 
 // ========================
 // GlobalHeader Component

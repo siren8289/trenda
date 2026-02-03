@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Palette, Layers, Layout, Paintbrush, ArrowRight } from "lucide-react";
-import { QuizComponent } from "../../../components/common/SharedComponents";
+import { QuizComponent } from "../../components/common/SharedComponents";
 
 interface Question {
   id: number;
