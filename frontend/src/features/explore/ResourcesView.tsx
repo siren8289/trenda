@@ -96,30 +96,6 @@ const components = [
   }
 ];
 
-const externalLinks = [
-  {
-    id: 1,
-    title: "React Official Docs",
-    url: "https://react.dev",
-    description: "The library for web and native user interfaces",
-    icon: Code
-  },
-  {
-    id: 2,
-    title: "Tailwind CSS",
-    url: "https://tailwindcss.com",
-    description: "Rapidly build modern websites without ever leaving your HTML",
-    icon: FileText
-  },
-  {
-    id: 3,
-    title: "Figma Community",
-    url: "https://www.figma.com/community",
-    description: "Explore thousands of free templates and plugins",
-    icon: Globe
-  }
-];
-
 const popularKeywords = [
   { id: 1, keyword: "React 19", growth: "+45%" },
   { id: 2, keyword: "AI/ML", growth: "+32%" },
@@ -383,16 +359,19 @@ export function ResourcesView({ onNavigate }: ResourcesViewProps) {
                     {resourceError}
                   </p>
                 )}
+                {!isLoadingResources &&
+                  !resourceError &&
+                  (!resources || resources.length === 0) && (
+                    <p className="text-sm text-gray-500 px-1">
+                      등록된 리소스가 없습니다. 백엔드에서 리소스를 먼저 등록해주세요.
+                    </p>
+                  )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {(resources && resources.length > 0 ? resources : externalLinks).map((item) => {
-                    const hasIcon = "icon" in item;
+                  {(resources ?? []).map((item) => {
                     const title = item.title;
-                    const description =
-                      "description" in item && item.description
-                        ? item.description
-                        : "";
-                    const url = "url" in item ? item.url : "#";
-                    const IconComponent = hasIcon ? item.icon : Globe;
+                    const description = item.description ?? "";
+                    const url = item.url ?? "#";
+                    const IconComponent = Globe;
 
                     const matchesSearch =
                       !searchQuery ||
@@ -425,10 +404,7 @@ export function ResourcesView({ onNavigate }: ResourcesViewProps) {
                               />
                             </h3>
                             <p className="text-gray-600 text-sm">
-                              {description ||
-                                (!hasIcon
-                                  ? "백엔드에서 연동된 리소스입니다."
-                                  : "")}
+                              {description || "백엔드에서 연동된 리소스입니다."}
                             </p>
                           </div>
                         </div>

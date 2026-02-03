@@ -30,7 +30,7 @@ async function request<T>(
       ...(options.headers ?? {}),
     },
     body:
-      method === "GET" || method === "HEAD"
+      method === "GET"
         ? undefined
         : options.body !== undefined
         ? JSON.stringify(options.body)
