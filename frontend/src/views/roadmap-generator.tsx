@@ -1,4 +1,4 @@
-import { RoadmapGeneratorView } from '../features/build/RoadmapGeneratorView';
+import { RoadmapGeneratorView } from "@/features/build/RoadmapGeneratorView";
 
 interface RoadmapGeneratorPageProps {
   onNavigate: (page: string) => void;

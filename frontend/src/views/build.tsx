@@ -1,4 +1,4 @@
-import { BuildEntryView } from '../features/build/BuildEntryView';
+import { BuildEntryView } from "@/features/build/BuildEntryView";
 
 interface BuildPageProps {
   onNavigate: (page: string) => void;
