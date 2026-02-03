@@ -7,14 +7,47 @@ import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import { Separator } from '../../ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { useState } from 'react';
+import { apiClient } from '@/shared/api/client';
+import type { ApiResponse, User } from '@/shared/api/types';
 
 interface LoginViewProps {
   onNavigate: (page: string) => void;
-  onLogin: (asAdmin?: boolean) => void;
+  onLogin: (user: User, asAdmin?: boolean) => void;
 }
 
 export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
   const [activeTab, setActiveTab] = useState("user");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUserLogin = async () => {
+    if (!email.trim()) {
+      setError("이메일을 입력해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.get<ApiResponse<User>>("/api/users/search", {
+        params: { email: email.trim() },
+      });
+
+      if (!response.success || !response.data) {
+        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+
+      onLogin(response.data, false);
+    } catch (e) {
+      setError("해당 이메일의 계정을 찾을 수 없습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-4">
@@ -68,6 +101,8 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                     type="email" 
                     placeholder="name@example.com"
                     className="bg-gray-50 border-gray-200 focus:border-[#1CB0F6] focus:ring-[#1CB0F6]/20 h-12 text-base rounded-xl px-4"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
 
@@ -78,6 +113,8 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                     type="password" 
                     placeholder="비밀번호를 입력하세요"
                     className="bg-gray-50 border-gray-200 focus:border-[#1CB0F6] focus:ring-[#1CB0F6]/20 h-12 text-base rounded-xl px-4"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
 
@@ -95,10 +132,17 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
 
                 <Button 
                   className="w-full bg-[#1CB0F6] hover:bg-[#0D8FCC] text-white h-12 text-base font-bold rounded-xl mt-2 shadow-lg shadow-blue-500/20"
-                  onClick={() => onLogin(false)}
+                  onClick={handleUserLogin}
+                  disabled={isLoading}
                 >
-                  로그인
+                  {isLoading ? "로그인 중..." : "로그인"}
                 </Button>
+
+                {error && (
+                  <p className="text-sm text-red-500 mt-2 px-1">
+                    {error}
+                  </p>
+                )}
 
                 <div className="relative py-4">
                   <Separator className="bg-gray-100" />
@@ -111,7 +155,8 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                   <Button 
                     variant="outline" 
                     className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 h-12 rounded-xl text-sm font-medium"
-                    onClick={() => onLogin(false)}
+                    onClick={handleUserLogin}
+                    disabled={isLoading}
                   >
                     <Chrome className="w-5 h-5 mr-2" />
                     Google
@@ -120,7 +165,8 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                   <Button 
                     variant="outline" 
                     className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 h-12 rounded-xl text-sm font-medium"
-                    onClick={() => onLogin(false)}
+                    onClick={handleUserLogin}
+                    disabled={isLoading}
                   >
                     <Github className="w-5 h-5 mr-2" />
                     GitHub
@@ -129,7 +175,8 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                   <Button 
                     variant="outline" 
                     className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 h-12 rounded-xl text-sm font-medium"
-                    onClick={() => onLogin(false)}
+                    onClick={handleUserLogin}
+                    disabled={isLoading}
                   >
                     <Facebook className="w-5 h-5 mr-2" />
                     Facebook
@@ -186,7 +233,17 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
 
                 <Button 
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 text-base font-bold rounded-xl mt-4 shadow-lg shadow-slate-900/20"
-                  onClick={() => onLogin(true)}
+                  onClick={() =>
+                    onLogin(
+                      {
+                        id: -1,
+                        email: "admin@trenda.local",
+                        displayName: "Admin",
+                        createdAt: new Date().toISOString(),
+                      },
+                      true
+                    )
+                  }
                 >
                   관리자 로그인
                 </Button>

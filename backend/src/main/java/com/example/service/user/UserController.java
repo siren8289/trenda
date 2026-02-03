@@ -26,6 +26,11 @@ public class UserController {
         return ApiResponse.success(userService.findById(id));
     }
 
+    @GetMapping("/search")
+    public ApiResponse<User> findByEmail(@RequestParam String email) {
+        return ApiResponse.success(userService.findByEmail(email));
+    }
+
     @PostMapping
     public ApiResponse<User> create(@Valid @RequestBody User user) {
         return ApiResponse.success(userService.create(user));

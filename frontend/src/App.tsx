@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "./shared/layout/Header";
 import { Footer } from "./shared/layout/Footer";
+import type { User } from "@/shared/api/types";
 
 // Pages
 import HomePage from "./views/index";
@@ -49,6 +50,7 @@ export default function App() {
   const [viewParams, setViewParams] = useState<any>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const handleNavigate = (page: string, params?: any) => {
     setCurrentView(page);
@@ -57,8 +59,9 @@ export default function App() {
     }
   };
 
-  const handleLogin = (asAdmin?: boolean) => {
+  const handleLogin = (user: User, asAdmin?: boolean) => {
     setIsLoggedIn(true);
+    setCurrentUser(user);
     if (asAdmin) {
       setIsAdmin(true);
       setCurrentView("admin-dashboard");
@@ -70,6 +73,7 @@ export default function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setIsAdmin(false);
+    setCurrentUser(null);
     setCurrentView("login");
   };
 
@@ -79,7 +83,7 @@ export default function App() {
          {currentView === "login" ? (
            <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
          ) : (
-           <SignupPage onNavigate={handleNavigate} onSignup={() => handleLogin(false)} />
+          <SignupPage onNavigate={handleNavigate} onSignup={handleLogin} />
          )}
       </div>
     );

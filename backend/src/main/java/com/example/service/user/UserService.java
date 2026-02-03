@@ -26,6 +26,11 @@ public class UserService {
                 .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
     }
 
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+    }
+
     @Transactional
     public User create(User user) {
 

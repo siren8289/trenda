@@ -7,16 +7,23 @@ import { Label } from '../../ui/label';
 import { Checkbox } from '../../ui/checkbox';
 import { Separator } from '../../ui/separator';
 import { Card } from '../../ui/card';
+import { apiClient } from '@/shared/api/client';
+import type { ApiResponse, User } from '@/shared/api/types';
 
 interface SignupViewProps {
   onNavigate: (page: string) => void;
-  onSignup: (asAdmin?: boolean) => void;
+  onSignup: (user: User, asAdmin?: boolean) => void;
 }
 
 export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
   const [step, setStep] = useState(1);
   const [accountType, setAccountType] = useState<'user' | 'admin'>('user');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
@@ -28,6 +35,37 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
 
   const handleNext = () => setStep(prev => prev + 1);
   const handleBack = () => setStep(prev => prev - 1);
+
+  const handleCompleteSignup = async () => {
+    if (!email.trim() || !name.trim()) {
+      setError("이메일과 이름을 모두 입력해주세요.");
+      setStep(2);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.post<ApiResponse<User>>("/api/users", {
+        body: {
+          email: email.trim(),
+          displayName: name.trim(),
+        },
+      });
+
+      if (!response.success || !response.data) {
+        setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+
+      onSignup(response.data, accountType === 'admin');
+    } catch (e) {
+      setError("이미 가입된 이메일이거나 서버 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderStepContent = () => {
     switch(step) {
@@ -81,6 +119,8 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
                   type="email" 
                   placeholder="name@example.com" 
                   className="bg-gray-50 border-gray-200 focus:border-[#1CB0F6] focus:ring-[#1CB0F6]/20 h-12 text-base rounded-xl px-4"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -90,6 +130,8 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
                   type="text" 
                   placeholder="홍길동" 
                   className="bg-gray-50 border-gray-200 focus:border-[#1CB0F6] focus:ring-[#1CB0F6]/20 h-12 text-base rounded-xl px-4"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -99,6 +141,8 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
                   type="password" 
                   placeholder="8자 이상 입력" 
                   className="bg-gray-50 border-gray-200 focus:border-[#1CB0F6] focus:ring-[#1CB0F6]/20 h-12 text-base rounded-xl px-4"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -299,14 +343,21 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
               </Button>
             ) : (
               <Button 
-                onClick={() => onSignup(accountType === 'admin')} 
+                onClick={handleCompleteSignup}
                 className="flex-1 h-12 rounded-xl text-base font-bold shadow-lg shadow-blue-500/20 bg-[#1CB0F6] hover:bg-[#0D8FCC]"
+                disabled={isSubmitting}
               >
-                가입 완료
+                {isSubmitting ? "가입 중..." : "가입 완료"}
                 <Check className="w-5 h-5 ml-2" />
               </Button>
             )}
           </div>
+
+          {error && (
+            <p className="text-sm text-red-500 mt-3 px-1">
+              {error}
+            </p>
+          )}
 
           {/* Login Link */}
           <div className="text-center mt-8 pt-6 border-t border-gray-100">
