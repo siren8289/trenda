@@ -47,19 +47,27 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
     setError(null);
 
     try {
-      const response = await apiClient.post<ApiResponse<User>>("/api/users", {
+      const raw = await apiClient.post<ApiResponse<User> | User>("/api/users", {
         body: {
           email: email.trim(),
           displayName: name.trim(),
         },
       });
 
-      if (!response.success || !response.data) {
+      // 백엔드가 ApiResponse 래퍼로 보내거나 User만 보낼 수 있음
+      const user: User | null =
+        raw && typeof raw === "object" && "data" in raw && (raw as ApiResponse<User>).data
+          ? (raw as ApiResponse<User>).data
+          : raw && typeof raw === "object" && "id" in raw && "email" in raw
+          ? (raw as User)
+          : null;
+
+      if (!user || typeof user.id !== "number") {
         setError("회원가입에 실패했습니다. 다시 시도해주세요.");
         return;
       }
 
-      onSignup(response.data, accountType === 'admin');
+      onSignup(user, accountType === "admin");
     } catch (e) {
       setError("이미 가입된 이메일이거나 서버 오류가 발생했습니다.");
     } finally {

@@ -32,16 +32,24 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
     setError(null);
 
     try {
-      const response = await apiClient.get<ApiResponse<User>>("/api/users/search", {
+      const raw = await apiClient.get<ApiResponse<User> | User>("/api/users/search", {
         params: { email: email.trim() },
       });
 
-      if (!response.success || !response.data) {
+      // 백엔드가 ApiResponse 래퍼로 보내거나 User만 보낼 수 있음
+      const user: User | null =
+        raw && typeof raw === "object" && "data" in raw && (raw as ApiResponse<User>).data
+          ? (raw as ApiResponse<User>).data
+          : raw && typeof raw === "object" && "id" in raw && "email" in raw
+          ? (raw as User)
+          : null;
+
+      if (!user || typeof user.id !== "number") {
         setError("로그인에 실패했습니다. 다시 시도해주세요.");
         return;
       }
 
-      onLogin(response.data, false);
+      onLogin(user, false);
     } catch (e) {
       setError("해당 이메일의 계정을 찾을 수 없습니다.");
     } finally {
