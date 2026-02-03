@@ -1,0 +1,502 @@
+openapi: 3.0.3
+info:
+  title: Trenda API
+  description: >
+    Design & Development major growth platform.
+    Includes project management, portfolio versioning,
+    skill analysis, trend interaction, and AI-driven insights.
+  version: 1.0.0
+
+servers:
+  - url: https://api.trenda.app
+    description: Production
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: User
+    description: 사용자 관리
+  - name: Profile
+    description: 프로필 조회
+  - name: Roadmap
+    description: 로드맵 관리
+  - name: Portfolio
+    description: 포트폴리오 관리
+  - name: Resource
+    description: 외부 리소스 관리
+  - name: Play
+    description: 게임 플레이 기록
+  - name: Game
+    description: 게임 관리
+  - name: Question
+    description: 문제 관리
+
+paths:
+
+  # User APIs
+  /api/users:
+    get:
+      tags: [User]
+      summary: Get all users
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      tags: [User]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/users/{id}:
+    get:
+      tags: [User]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Profile APIs
+  /api/profile/{userId}:
+    get:
+      tags: [Profile]
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Profile info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Roadmap APIs
+  /api/roadmap/{userId}:
+    get:
+      tags: [Roadmap]
+      summary: Get user roadmaps
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Roadmap list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Roadmap'
+
+  /api/roadmap:
+    post:
+      tags: [Roadmap]
+      summary: Create roadmap
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: title
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: content
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Roadmap created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roadmap'
+
+  # Portfolio APIs
+  /api/portfolio/{userId}:
+    get:
+      tags: [Portfolio]
+      summary: Get user portfolio
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Portfolio info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+
+  /api/portfolio:
+    post:
+      tags: [Portfolio]
+      summary: Create or update portfolio
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: title
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: summary
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Portfolio created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+
+  # Resource APIs
+  /api/resources:
+    get:
+      tags: [Resource]
+      summary: Get all resources
+      responses:
+        '200':
+          description: Resource list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+
+    post:
+      tags: [Resource]
+      summary: Create resource
+      parameters:
+        - name: title
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+  /api/resources/search:
+    get:
+      tags: [Resource]
+      summary: Search resources by category
+      parameters:
+        - name: category
+          in: query
+          required: true
+          schema:
+            type: string
+            example: VIDEO
+      responses:
+        '200':
+          description: Filtered resource list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+
+  # Play Record APIs
+  /api/play/records/user/{userId}:
+    get:
+      tags: [Play]
+      summary: Get user play records
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Play record list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/play/records:
+    post:
+      tags: [Play]
+      summary: Record play result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayRecordRequest'
+      responses:
+        '201':
+          description: Record saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Game APIs
+  /api/play/games:
+    get:
+      tags: [Game]
+      summary: Get all games
+      responses:
+        '200':
+          description: Game list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      tags: [Game]
+      summary: Create game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Game'
+      responses:
+        '201':
+          description: Game created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Question APIs
+  /api/play/questions/game/{gameId}:
+    get:
+      tags: [Question]
+      summary: Get questions by game
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Question list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/play/questions:
+    post:
+      tags: [Question]
+      summary: Create question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      responses:
+        '201':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+components:
+
+  schemas:
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        name:
+          type: string
+        major:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Roadmap:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Portfolio:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+          description: 자료 제목
+        url:
+          type: string
+          description: 링크 주소
+        category:
+          type: string
+          description: 카테고리 (VIDEO, BLOG, DOC)
+          example: VIDEO
+        description:
+          type: string
+          description: 자료 설명
+
+    PlayRecordRequest:
+      type: object
+      required: [userId, gameId, score]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        gameId:
+          type: integer
+          format: int64
+        score:
+          type: integer
+          minimum: 0
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        gameId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        answer:
+          type: string
