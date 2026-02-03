@@ -18,10 +18,39 @@ docker compose up -d postgres    # PostgreSQL 먼저 실행 (필수)
 
 `http://localhost:8080/swagger-ui.html` 또는 `/api/health` 로 동작 확인.
 
-### Render 배포 시 포트
+### Render 배포 (Build / Start Command)
 
-`application.yml` 에 `server.port: ${PORT:8080}` 가 있어서, Render 가 주는 `PORT` 환경 변수에 서버가 바인딩됩니다.  
-이 설정이 없으면 "No open ports detected" 로 서비스가 종료되므로, 배포 시 이 줄이 포함된 최신 코드가 반영됐는지 확인하세요.
+**Build Command**
+
+```text
+./gradlew build -x test
+```
+
+(테스트 제외 시 빌드만 빠르게. 테스트 포함하려면 `./gradlew build`)
+
+**Start Command** (비워두면 안 됨)
+
+```text
+java -jar build/libs/app.jar
+```
+
+이 프로젝트는 `bootJar { archiveFileName = 'app.jar' }` 로 jar 이름을 고정해 두었으므로 위 명령 그대로 사용하면 됨.
+
+**환경 변수**
+
+- `DATABASE_URL`: Neon 등 PostgreSQL 연결 문자열 (필수)
+- `PORT`: Render가 자동 주입. `application.yml` 에서 `server.port: ${PORT:8080}` 로 사용 중.
+
+**포트**
+
+`application.yml` 에 `server.port: ${PORT:8080}` 가 있어서 Render 의 `PORT` 에 바인딩됨. 없으면 "No open ports detected" 로 종료됨.
+
+**Exited with status 1 이 뜰 때**
+
+- Render **Logs** 맨 위부터 **처음 나온 에러 5~10줄** 확인.
+- `Could not resolve placeholder 'XXX'` → Environment 에 해당 변수 추가하거나 `application.yml` 에 `${XXX:기본값}` 처리.
+- Start Command 가 비어 있거나 `./gradlew bootRun` 이면 → 위 **Start Command** 로 변경 (`java -jar build/libs/app.jar`).
+- 로컬에서 `./gradlew build && ls build/libs` 로 `app.jar` 생성 여부 확인.
 
 ## Configuration
 

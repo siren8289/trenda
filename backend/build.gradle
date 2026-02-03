@@ -35,6 +35,11 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
 }
 
+bootJar {
+	enabled = true
+	archiveFileName = 'app.jar'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
