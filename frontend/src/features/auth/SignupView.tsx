@@ -8,15 +8,15 @@ import { Checkbox } from '../../ui/checkbox';
 import { Separator } from '../../ui/separator';
 import { Card } from '../../ui/card';
 import { apiClient } from '@/shared/api/client';
-import type { User } from '@/shared/api/types';
 import { normalizeUser } from '@/shared/api/types';
 
 interface SignupViewProps {
   onNavigate: (page: string) => void;
-  onSignup: (user: User, asAdmin?: boolean) => void;
+  /** 회원가입 성공 시 호출 (자동 로그인 없이 로그인 페이지로 이동용) */
+  onSignupSuccess?: () => void;
 }
 
-export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
+export function SignupView({ onNavigate, onSignupSuccess }: SignupViewProps) {
   const [step, setStep] = useState(1);
   const [accountType, setAccountType] = useState<'user' | 'admin'>('user');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -65,7 +65,8 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
         return;
       }
 
-      onSignup(user, accountType === "admin");
+      // 가입만 완료하고 로그인 페이지로 이동 (자동 로그인 안 함)
+      onSignupSuccess?.();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "서버 오류가 발생했습니다.";
       const isNetworkError =

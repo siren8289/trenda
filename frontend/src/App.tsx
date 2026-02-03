@@ -81,9 +81,9 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
          {currentView === "login" ? (
-           <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+           <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} signedUpJustNow={viewParams?.signedUp === true} />
          ) : (
-          <SignupPage onNavigate={handleNavigate} onSignup={handleLogin} />
+          <SignupPage onNavigate={handleNavigate} onSignupSuccess={() => handleNavigate('login', { signedUp: true })} />
          )}
       </div>
     );

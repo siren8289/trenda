@@ -14,9 +14,10 @@ import { normalizeUser } from '@/shared/api/types';
 interface LoginViewProps {
   onNavigate: (page: string) => void;
   onLogin: (user: User, asAdmin?: boolean) => void;
+  signedUpJustNow?: boolean;
 }
 
-export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
+export function LoginView({ onNavigate, onLogin, signedUpJustNow }: LoginViewProps) {
   const [activeTab, setActiveTab] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,6 +85,11 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
             <p className="text-gray-500 text-base">
               서비스 이용을 위해 로그인해주세요.
             </p>
+            {signedUpJustNow && (
+              <p className="mt-3 text-[#1CB0F6] text-sm font-medium bg-blue-50 rounded-xl py-2.5 px-3">
+                회원가입이 완료되었습니다. 아래에서 로그인해주세요.
+              </p>
+            )}
           </div>
 
           <Tabs defaultValue="user" value={activeTab} onValueChange={setActiveTab} className="w-full">
