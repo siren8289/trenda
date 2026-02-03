@@ -1,11 +1,7 @@
+# datasource는 application.yml에 두지 않음. ServiceApplication.main()에서만 설정:
+# - Render: DATABASE_URL 있으면 → JDBC 변환 후 주입
+# - 로컬: DATABASE_URL 없으면 → localhost:5432/trenda 주입 (docker-compose)
 spring:
-  datasource:
-    # 로컬: docker-compose postgres 기본값. Render: DATABASE_URL 설정 시 ServiceApplication에서 SPRING_DATASOURCE_* 로 주입
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/trenda}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.postgresql.Driver}
-    username: ${SPRING_DATASOURCE_USERNAME:trenda}
-    password: ${SPRING_DATASOURCE_PASSWORD:trenda_password}
-
   jpa:
     hibernate:
       ddl-auto: update

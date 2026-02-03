@@ -9,7 +9,6 @@ import java.net.URI;
 public class ServiceApplication {
 
     public static void main(String[] args) {
-        // Render 등에서 DATABASE_URL(PostgreSQL)이 있으면 JDBC로 변환해 사용
         String databaseUrl = System.getenv("DATABASE_URL");
         if (databaseUrl != null && databaseUrl.startsWith("postgresql://")) {
             try {
@@ -27,17 +26,31 @@ public class ServiceApplication {
                     if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
                         jdbcUrl += "?" + uri.getQuery();
                     }
-                    System.setProperty("spring.datasource.url", jdbcUrl);
-                    System.setProperty("spring.datasource.username", username);
-                    System.setProperty("spring.datasource.password", password);
-                    System.setProperty("spring.datasource.driver-class-name", "org.postgresql.Driver");
-                    System.setProperty("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
+                    setDatasourceProperties(jdbcUrl, username, password);
                 }
             } catch (Exception ignored) {
-                // DATABASE_URL 파싱 실패 시 application.yml 기본값(PostgreSQL) 사용
+                setDatasourceProperties(
+                    "jdbc:postgresql://localhost:5432/trenda",
+                    "trenda",
+                    "trenda_password"
+                );
             }
+        } else {
+            setDatasourceProperties(
+                "jdbc:postgresql://localhost:5432/trenda",
+                "trenda",
+                "trenda_password"
+            );
         }
         SpringApplication.run(ServiceApplication.class, args);
+    }
+
+    private static void setDatasourceProperties(String url, String username, String password) {
+        System.setProperty("spring.datasource.url", url);
+        System.setProperty("spring.datasource.username", username);
+        System.setProperty("spring.datasource.password", password);
+        System.setProperty("spring.datasource.driver-class-name", "org.postgresql.Driver");
+        System.setProperty("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
     }
 }
 
