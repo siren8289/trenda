@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Briefcase, Plus, Download, FileImage, FileCode, FileText, Link as LinkIcon,
@@ -6,6 +6,8 @@ import {
   Image as ImageIcon, Code, Globe, Github, Figma, Eye, Settings,
   ChevronRight, Trash2, Edit, Copy, ExternalLink, Sparkles, Calendar
 } from "lucide-react";
+import { apiClient } from "@/shared/api/client";
+import type { Portfolio } from "@/shared/api/types";
 
 type ResourceType = "image" | "code" | "link" | "document";
 
@@ -32,12 +34,16 @@ interface PortfolioVersion {
 
 interface PortfolioManagerViewProps {
   onNavigate: (page: string) => void;
+  userId: number;
 }
 
-export function PortfolioManagerView({ onNavigate }: PortfolioManagerViewProps) {
+export function PortfolioManagerView({ onNavigate, userId }: PortfolioManagerViewProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "versions" | "export">("resources");
   const [selectedResources, setSelectedResources] = useState<number[]>([]);
   const [showAutoCollect, setShowAutoCollect] = useState(false);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 자동 수집된 리소스
   const resources: Resource[] = [
@@ -116,36 +122,21 @@ export function PortfolioManagerView({ onNavigate }: PortfolioManagerViewProps) 
     }
   ];
 
-  // 포트폴리오 버전들
-  const versions: PortfolioVersion[] = [
-    {
-      id: 1,
-      name: "v2.0 - 2024 취업용",
-      date: "2024.01.15",
-      resources: 24,
-      thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&q=80",
-      status: "published",
-      description: "최신 프로젝트 중심으로 재구성"
-    },
-    {
-      id: 2,
-      name: "v1.5 - 대학원 지원용",
-      date: "2024.01.10",
-      resources: 18,
-      thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80",
-      status: "draft",
-      description: "연구 프로젝트 강조"
-    },
-    {
-      id: 3,
-      name: "v1.0 - 졸업 포트폴리오",
-      date: "2023.12.20",
-      resources: 15,
-      thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=400&q=80",
-      status: "published",
-      description: "졸업작품 중심"
-    }
-  ];
+  // 포트폴리오 버전들 (백엔드 포트폴리오 1개를 메인 버전으로 사용)
+  const versions: PortfolioVersion[] = portfolio
+    ? [
+        {
+          id: portfolio.id,
+          name: portfolio.title || "My Portfolio",
+          date: new Date(portfolio.createdAt).toLocaleDateString(),
+          resources: resources.length,
+          thumbnail:
+            "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&q=80",
+          status: "published",
+          description: portfolio.summary || "나의 프로젝트와 경력을 정리한 포트폴리오",
+        },
+      ]
+    : [];
 
   const getResourceIcon = (type: ResourceType) => {
     switch (type) {
@@ -179,6 +170,47 @@ export function PortfolioManagerView({ onNavigate }: PortfolioManagerViewProps) 
 
   const handleAutoCollect = () => {
     alert("프로젝트에서 자동으로 리소스를 수집합니다.\n- 이미지 파일\n- 코드 스니펫\n- 링크\n- 문서");
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPortfolio = async () => {
+      if (!userId) return;
+      setError(null);
+      try {
+        const data = await apiClient.get<Portfolio>(`/api/portfolio/${userId}`);
+        if (!cancelled) {
+          setPortfolio(data);
+        }
+      } catch {
+        // 포트폴리오가 없으면 404일 수 있으니 에러는 조용히 무시
+      }
+    };
+    loadPortfolio();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const handleSaveMainPortfolio = async () => {
+    if (!userId) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        userId: String(userId),
+        title: portfolio?.title || "My Portfolio",
+        summary:
+          portfolio?.summary ||
+          "Trenda에서 생성된 포트폴리오입니다. 프로젝트 리소스와 버전이 여기에 정리됩니다.",
+      });
+      const saved = await apiClient.post<Portfolio>(`/api/portfolio?${params.toString()}`);
+      setPortfolio(saved);
+    } catch {
+      setError("포트폴리오 저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -416,8 +448,14 @@ export function PortfolioManagerView({ onNavigate }: PortfolioManagerViewProps) 
             >
               <div className="mb-6">
                 <h2 className="text-2xl mb-2">포트폴리오 버전</h2>
-                <p className="text-gray-600">목적별로 다양한 버전의 포트폴리오를 관리하세요</p>
+                <p className="text-gray-600">
+                  현재 계정의 포트폴리오를 백엔드에 저장하고 불러옵니다.
+                </p>
               </div>
+
+              {error && (
+                <p className="text-sm text-red-500 mb-4">{error}</p>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {versions.map((version, index) => (
@@ -498,11 +536,16 @@ export function PortfolioManagerView({ onNavigate }: PortfolioManagerViewProps) 
                   transition={{ delay: versions.length * 0.1 }}
                   whileHover={{ scale: 1.02 }}
                   className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-[#1CB0F6] flex items-center justify-center cursor-pointer hover:shadow-lg transition-all"
+                  onClick={handleSaveMainPortfolio}
                 >
                   <div className="text-center p-8">
                     <Plus size={48} className="mx-auto mb-4 text-[#1CB0F6]" />
-                    <h3 className="text-xl font-bold mb-2">새 버전 만들기</h3>
-                    <p className="text-gray-600">새로운 포트폴리오 버전 생성</p>
+                    <h3 className="text-xl font-bold mb-2">
+                      {isSaving ? "저장 중..." : "포트폴리오 저장"}
+                    </h3>
+                    <p className="text-gray-600">
+                      현재 계정의 포트폴리오를 서버에 생성/업데이트합니다
+                    </p>
                   </div>
                 </motion.div>
               </div>

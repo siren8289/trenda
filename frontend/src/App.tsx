@@ -114,7 +114,9 @@ export default function App() {
         {currentView === "editor" && <EditorPage onNavigate={handleNavigate} />}
         {currentView === "my-demos" && <MyDemosPage onNavigate={handleNavigate} />}
         {currentView === "favorites" && <FavoritesPage onNavigate={handleNavigate} />}
-        {currentView === "mypage" && <ProfilePage onNavigate={handleNavigate} />}
+        {currentView === "mypage" && currentUser && (
+          <ProfilePage onNavigate={handleNavigate} user={currentUser} />
+        )}
         
         {/* Fallback for routes not explicitly in the new list but linked in UI */}
         {currentView === "trends" && <TrendsPage onNavigate={handleNavigate} />}
@@ -131,9 +133,15 @@ export default function App() {
         {currentView === "community-contest" && <CommunityContestPage onNavigate={handleNavigate} />}
         {currentView === "admin-review" && <AdminReviewPage onNavigate={handleNavigate} onLogout={handleLogout} />}
         {currentView === "build-entry" && <BuildEntryPage onNavigate={handleNavigate} />}
-        {currentView === "roadmap-generator" && <RoadmapGeneratorPage onNavigate={handleNavigate} />}
-        {currentView === "portfolio-manager" && <PortfolioManagerPage onNavigate={handleNavigate} />}
-        {currentView === "mypage" && <ProfilePage onNavigate={handleNavigate} />}
+        {currentView === "roadmap-generator" && currentUser && (
+          <RoadmapGeneratorPage onNavigate={handleNavigate} user={currentUser} />
+        )}
+        {currentView === "portfolio-manager" && currentUser && (
+          <PortfolioManagerPage onNavigate={handleNavigate} user={currentUser} />
+        )}
+        {currentView === "mypage" && currentUser && (
+          <ProfilePage onNavigate={handleNavigate} user={currentUser} />
+        )}
         {currentView === "notifications" && <NotificationsPage onNavigate={handleNavigate} />}
         {currentView === "premium" && <PremiumPage onNavigate={handleNavigate} />}
         {currentView === "ai-generate" && <AIGeneratePage onNavigate={handleNavigate} />}

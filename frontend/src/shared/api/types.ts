@@ -18,3 +18,28 @@ export interface User {
   createdAt: string;
 }
 
+export interface Roadmap {
+  id: number;
+  userId: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface Portfolio {
+  id: number;
+  userId: number;
+  title: string;
+  summary: string;
+  createdAt: string;
+}
+
+export interface PlayRecord {
+  id: number;
+  userId: number;
+  gameId: number;
+  score: number;
+  playedAt: string;
+}
+
+

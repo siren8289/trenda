@@ -1,2 +1,11 @@
 import { ProfileView } from '../features/user/ProfileView';
-export default function ProfilePage(props: any) { return <ProfileView {...props} />; }
+import type { User } from '@/shared/api/types';
+
+interface ProfilePageProps {
+  onNavigate: (page: string) => void;
+  user: User;
+}
+
+export default function ProfilePage({ onNavigate, user }: ProfilePageProps) {
+  return <ProfileView onNavigate={onNavigate} user={user} />;
+}

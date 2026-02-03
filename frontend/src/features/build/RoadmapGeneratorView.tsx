@@ -1,10 +1,13 @@
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, Circle, Target, BookOpen, Gamepad2, Code, Save, Share2 } from "lucide-react";
+import { apiClient } from "@/shared/api/client";
+import type { Roadmap } from "@/shared/api/types";
 
 interface RoadmapGeneratorViewProps {
   onBack: () => void;
   onNavigate: (page: string) => void;
+  userId: number;
 }
 
 const mockRoadmap = [
@@ -38,9 +41,11 @@ const mockRoadmap = [
   }
 ];
 
-export function RoadmapGeneratorView({ onBack, onNavigate }: RoadmapGeneratorViewProps) {
+export function RoadmapGeneratorView({ onBack, onNavigate, userId }: RoadmapGeneratorViewProps) {
   const [activeStep, setActiveStep] = useState(2);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [roadmaps, setRoadmaps] = useState<Roadmap[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -55,6 +60,45 @@ export function RoadmapGeneratorView({ onBack, onNavigate }: RoadmapGeneratorVie
       case "game": return <Gamepad2 size={16} className="text-purple-500" />;
       case "project": return <Code size={16} className="text-green-500" />;
       default: return <Circle size={16} />;
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadRoadmaps = async () => {
+      if (!userId) return;
+      setError(null);
+      try {
+        const data = await apiClient.get<Roadmap[]>(`/api/roadmap/${userId}`);
+        if (!cancelled) {
+          setRoadmaps(data);
+        }
+      } catch {
+        // 로드맵 없을 수 있으니 조용히 무시
+      }
+    };
+    loadRoadmaps();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const handleSaveRoadmap = async () => {
+    if (!userId) return;
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        userId: String(userId),
+        title: "My Career Roadmap",
+        content: JSON.stringify(mockRoadmap),
+      });
+      const saved = await apiClient.post<Roadmap>(`/api/roadmap?${params.toString()}`);
+      setRoadmaps((prev) => (prev ? [...prev, saved] : [saved]));
+    } catch {
+      setError("로드맵 저장에 실패했습니다.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -76,9 +120,13 @@ export function RoadmapGeneratorView({ onBack, onNavigate }: RoadmapGeneratorVie
                 <Share2 size={18} />
                 공유
               </button>
-              <button className="px-6 py-3 bg-[#1CB0F6] text-white rounded-xl font-bold hover:bg-[#1CB0F6]/90 flex items-center gap-2 shadow-lg">
+              <button
+                className="px-6 py-3 bg-[#1CB0F6] text-white rounded-xl font-bold hover:bg-[#1CB0F6]/90 flex items-center gap-2 shadow-lg"
+                onClick={handleSaveRoadmap}
+                disabled={isGenerating}
+              >
                 <Save size={18} />
-                저장하기
+                {isGenerating ? "저장 중..." : "저장하기"}
               </button>
             </div>
           </div>
@@ -98,13 +146,17 @@ export function RoadmapGeneratorView({ onBack, onNavigate }: RoadmapGeneratorVie
             </p>
           </motion.div>
 
+          {error && (
+            <p className="text-sm text-red-500 mb-4 text-center">{error}</p>
+          )}
+
           {/* Roadmap Visualization */}
           <div className="relative">
             {/* Connection Line */}
             <div className="absolute left-[27px] top-8 bottom-8 w-1 bg-gray-200 rounded-full" />
 
             <div className="space-y-12">
-              {mockRoadmap.map((stage, index) => (
+              {(mockRoadmap).map((stage, index) => (
                 <motion.div
                   key={stage.stage}
                   initial={{ opacity: 0, x: -20 }}
