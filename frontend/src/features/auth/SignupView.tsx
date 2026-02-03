@@ -68,8 +68,13 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
       onSignup(user, accountType === "admin");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "서버 오류가 발생했습니다.";
+      const isNetworkError =
+        /load failed|failed to fetch|networkerror|network error|연결/i.test(msg) ||
+        msg === "Load failed";
       setError(
-        msg.includes("already exists") || msg.includes("이미")
+        isNetworkError
+          ? "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고, 백엔드 서버가 실행 중인지 확인해주세요."
+          : msg.includes("already exists") || msg.includes("이미")
           ? "이미 가입된 이메일입니다."
           : msg
       );

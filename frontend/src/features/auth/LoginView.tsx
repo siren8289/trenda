@@ -46,8 +46,13 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
       onLogin(user, false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "로그인할 수 없습니다.";
+      const isNetworkError =
+        /load failed|failed to fetch|networkerror|network error|연결/i.test(msg) ||
+        msg === "Load failed";
       setError(
-        msg.includes("not found") || msg.includes("404")
+        isNetworkError
+          ? "서버에 연결할 수 없습니다. 인터넷 연결을 확인하고, 백엔드 서버가 실행 중인지 확인해주세요."
+          : msg.includes("not found") || msg.includes("404")
           ? "해당 이메일의 계정을 찾을 수 없습니다."
           : msg
       );
