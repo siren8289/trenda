@@ -38,17 +38,28 @@ async function request<T>(
   });
 
   if (!response.ok) {
-    let errorMessage = `API ${method} ${path} failed: ${response.status} ${response.statusText}`;
-
+    let backendMessage: string | null = null;
     try {
       const text = await response.text();
       if (text) {
-        errorMessage += ` - ${text}`;
+        try {
+          const parsed = JSON.parse(text) as { message?: string; error?: { message?: string } };
+          backendMessage =
+            parsed?.message ??
+            parsed?.error?.message ??
+            (typeof parsed?.error === "string" ? parsed.error : null) ??
+            text;
+        } catch {
+          backendMessage = text;
+        }
       }
     } catch {
       // ignore body read errors
     }
-
+    const errorMessage =
+      backendMessage && backendMessage.length < 200
+        ? backendMessage
+        : `API 요청 실패 (${response.status})`;
     throw new Error(errorMessage);
   }
 

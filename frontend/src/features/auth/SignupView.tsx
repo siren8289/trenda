@@ -8,7 +8,8 @@ import { Checkbox } from '../../ui/checkbox';
 import { Separator } from '../../ui/separator';
 import { Card } from '../../ui/card';
 import { apiClient } from '@/shared/api/client';
-import type { ApiResponse, User } from '@/shared/api/types';
+import type { User } from '@/shared/api/types';
+import { normalizeUser } from '@/shared/api/types';
 
 interface SignupViewProps {
   onNavigate: (page: string) => void;
@@ -24,6 +25,10 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsAll, setTermsAll] = useState(false);
+  const [termsService, setTermsService] = useState(false);
+  const [termsPrivacy, setTermsPrivacy] = useState(false);
+  const [termsMarketing, setTermsMarketing] = useState(false);
 
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
@@ -47,29 +52,27 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
     setError(null);
 
     try {
-      const raw = await apiClient.post<ApiResponse<User> | User>("/api/users", {
+      const raw = await apiClient.post<unknown>("/api/users", {
         body: {
           email: email.trim(),
           displayName: name.trim(),
         },
       });
 
-      // 백엔드가 ApiResponse 래퍼로 보내거나 User만 보낼 수 있음
-      const user: User | null =
-        raw && typeof raw === "object" && "data" in raw && (raw as ApiResponse<User>).data
-          ? (raw as ApiResponse<User>).data
-          : raw && typeof raw === "object" && "id" in raw && "email" in raw
-          ? (raw as User)
-          : null;
-
-      if (!user || typeof user.id !== "number") {
-        setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+      const user = normalizeUser(raw);
+      if (!user) {
+        setError("회원가입에 실패했습니다. 응답 형식을 확인해주세요.");
         return;
       }
 
       onSignup(user, accountType === "admin");
     } catch (e) {
-      setError("이미 가입된 이메일이거나 서버 오류가 발생했습니다.");
+      const msg = e instanceof Error ? e.message : "서버 오류가 발생했습니다.";
+      setError(
+        msg.includes("already exists") || msg.includes("이미")
+          ? "이미 가입된 이메일입니다."
+          : msg
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -224,6 +227,13 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
         }
 
       case 4: // Terms
+        const handleAllTermsChange = (checked: boolean | "indeterminate") => {
+          const value = checked === true;
+          setTermsAll(value);
+          setTermsService(value);
+          setTermsPrivacy(value);
+          setTermsMarketing(value);
+        };
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-bold text-gray-900 mb-2">약관 동의</h3>
@@ -232,7 +242,12 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
                 <label htmlFor="all-terms" className="text-gray-900 cursor-pointer font-bold text-base">
                   전체 약관 동의
                 </label>
-                <Checkbox id="all-terms" className="h-6 w-6 rounded-md data-[state=checked]:bg-[#1CB0F6] data-[state=checked]:border-[#1CB0F6]" />
+                <Checkbox
+                  id="all-terms"
+                  className="h-6 w-6 rounded-md data-[state=checked]:bg-[#1CB0F6] data-[state=checked]:border-[#1CB0F6]"
+                  checked={termsAll}
+                  onCheckedChange={handleAllTermsChange}
+                />
               </div>
 
               <Separator className="bg-gray-200" />
@@ -242,19 +257,46 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
                   <label htmlFor="terms-service" className="text-gray-700 cursor-pointer text-sm flex-1">
                     <span className="text-[#1CB0F6] font-semibold">서비스 이용약관</span> (필수)
                   </label>
-                  <Checkbox id="terms-service" className="data-[state=checked]:bg-[#1CB0F6]" />
+                  <Checkbox
+                    id="terms-service"
+                    className="data-[state=checked]:bg-[#1CB0F6]"
+                    checked={termsService}
+                    onCheckedChange={(checked) => {
+                      setTermsService(checked === true);
+                      if (!(checked === true)) setTermsAll(false);
+                      else if (termsPrivacy) setTermsAll(true);
+                    }}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <label htmlFor="terms-privacy" className="text-gray-700 cursor-pointer text-sm flex-1">
                     <span className="text-[#1CB0F6] font-semibold">개인정보 수집 및 이용</span> (필수)
                   </label>
-                  <Checkbox id="terms-privacy" className="data-[state=checked]:bg-[#1CB0F6]" />
+                  <Checkbox
+                    id="terms-privacy"
+                    className="data-[state=checked]:bg-[#1CB0F6]"
+                    checked={termsPrivacy}
+                    onCheckedChange={(checked) => {
+                      setTermsPrivacy(checked === true);
+                      if (!(checked === true)) setTermsAll(false);
+                      else if (termsService) setTermsAll(true);
+                    }}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <label htmlFor="terms-marketing" className="text-gray-700 cursor-pointer text-sm flex-1">
                     마케팅 정보 수신 (선택)
                   </label>
-                  <Checkbox id="terms-marketing" className="data-[state=checked]:bg-[#1CB0F6]" />
+                  <Checkbox
+                    id="terms-marketing"
+                    className="data-[state=checked]:bg-[#1CB0F6]"
+                    checked={termsMarketing}
+                    onCheckedChange={(checked) => {
+                      setTermsMarketing(checked === true);
+                      if (checked === true && termsService && termsPrivacy) setTermsAll(true);
+                      else if (!(checked === true)) setTermsAll(false);
+                    }}
+                  />
                 </div>
               </div>
             </div>

@@ -8,7 +8,8 @@ import { Separator } from '../../ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { useState } from 'react';
 import { apiClient } from '@/shared/api/client';
-import type { ApiResponse, User } from '@/shared/api/types';
+import type { User } from '@/shared/api/types';
+import { normalizeUser } from '@/shared/api/types';
 
 interface LoginViewProps {
   onNavigate: (page: string) => void;
@@ -32,26 +33,24 @@ export function LoginView({ onNavigate, onLogin }: LoginViewProps) {
     setError(null);
 
     try {
-      const raw = await apiClient.get<ApiResponse<User> | User>("/api/users/search", {
+      const raw = await apiClient.get<unknown>("/api/users/search", {
         params: { email: email.trim() },
       });
 
-      // 백엔드가 ApiResponse 래퍼로 보내거나 User만 보낼 수 있음
-      const user: User | null =
-        raw && typeof raw === "object" && "data" in raw && (raw as ApiResponse<User>).data
-          ? (raw as ApiResponse<User>).data
-          : raw && typeof raw === "object" && "id" in raw && "email" in raw
-          ? (raw as User)
-          : null;
-
-      if (!user || typeof user.id !== "number") {
-        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+      const user = normalizeUser(raw);
+      if (!user) {
+        setError("로그인에 실패했습니다. 이메일을 확인해주세요.");
         return;
       }
 
       onLogin(user, false);
     } catch (e) {
-      setError("해당 이메일의 계정을 찾을 수 없습니다.");
+      const msg = e instanceof Error ? e.message : "로그인할 수 없습니다.";
+      setError(
+        msg.includes("not found") || msg.includes("404")
+          ? "해당 이메일의 계정을 찾을 수 없습니다."
+          : msg
+      );
     } finally {
       setIsLoading(false);
     }
