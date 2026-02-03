@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Lock, Chrome, TrendingUp, Github, Facebook, Check, ArrowRight, ArrowLeft, User, ShieldCheck, Briefcase, Code, PenTool, Layout } from 'lucide-react';
+import { Mail, Lock, Chrome, TrendingUp, Github, Facebook, Check, ArrowRight, ArrowLeft, User as UserIcon, ShieldCheck, Briefcase, Code, PenTool, Layout } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -80,7 +80,7 @@ export function SignupView({ onNavigate, onSignup }: SignupViewProps) {
               >
                 <div className="flex flex-col items-center gap-4 py-6">
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${accountType === 'user' ? 'bg-[#1CB0F6] text-white' : 'bg-gray-100 text-gray-500'}`}>
-                    <User size={28} />
+                    <UserIcon size={28} />
                   </div>
                   <div className="text-center">
                     <h4 className="font-bold text-gray-900 text-lg">일반 회원</h4>
