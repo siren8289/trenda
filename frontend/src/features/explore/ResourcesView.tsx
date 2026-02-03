@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { 
   Search, BookOpen, Layers, ExternalLink, FileText, 
   Code, Globe, Bookmark, Sparkles, ArrowRight
 } from "lucide-react";
+import { apiClient } from "@/shared/api/client";
 
 interface ResourcesViewProps {
   onNavigate?: (page: string) => void;
 }
 
 type TabType = "articles" | "components" | "links";
+
+interface Resource {
+  id: number;
+  title: string;
+  url: string;
+  category: string;
+  description: string;
+}
 
 // Mock Data
 const articles = [
@@ -123,6 +132,40 @@ const popularKeywords = [
 export function ResourcesView({ onNavigate }: ResourcesViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>("articles");
   const [searchQuery, setSearchQuery] = useState("");
+  const [resources, setResources] = useState<Resource[] | null>(null);
+  const [isLoadingResources, setIsLoadingResources] = useState(false);
+  const [resourceError, setResourceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchResources = async () => {
+      setIsLoadingResources(true);
+      setResourceError(null);
+
+      try {
+        const data = await apiClient.get<Resource[]>("/api/resources");
+        if (!cancelled) {
+          setResources(data);
+        }
+      } catch (error) {
+        console.error("Failed to load resources", error);
+        if (!cancelled) {
+          setResourceError("리소스를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingResources(false);
+        }
+      }
+    };
+
+    fetchResources();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tabs = [
     { id: "articles" as TabType, label: "Articles", icon: BookOpen },
@@ -329,31 +372,76 @@ export function ResourcesView({ onNavigate }: ResourcesViewProps) {
             )}
 
             {activeTab === "links" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {externalLinks.map((link) => (
-                  <motion.div
-                    key={link.id}
-                    whileHover={{ scale: 1.02 }}
-                    className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex items-start justify-between group cursor-pointer"
-                    onClick={() => window.open(link.url, '_blank')}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-[#1CB0F6] group-hover:text-white transition-colors">
-                        <link.icon size={24} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
-                          {link.title}
-                          <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400" />
-                        </h3>
-                        <p className="text-gray-600 text-sm">{link.description}</p>
-                      </div>
-                    </div>
-                    <div className="p-2 bg-gray-50 rounded-full group-hover:bg-gray-100">
-                      <ArrowRight size={20} className="text-gray-400 group-hover:text-[#1CB0F6]" />
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="space-y-4">
+                {isLoadingResources && (
+                  <p className="text-sm text-gray-500 px-1">
+                    리소스를 불러오는 중입니다...
+                  </p>
+                )}
+                {resourceError && (
+                  <p className="text-sm text-red-500 px-1">
+                    {resourceError}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(resources && resources.length > 0 ? resources : externalLinks).map((item) => {
+                    const hasIcon = "icon" in item;
+                    const title = item.title;
+                    const description =
+                      "description" in item && item.description
+                        ? item.description
+                        : "";
+                    const url = "url" in item ? item.url : "#";
+                    const IconComponent = hasIcon ? item.icon : Globe;
+
+                    const matchesSearch =
+                      !searchQuery ||
+                      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      description
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase());
+
+                    if (!matchesSearch) {
+                      return null;
+                    }
+
+                    return (
+                      <motion.div
+                        key={item.id}
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex items-start justify-between group cursor-pointer"
+                        onClick={() => url !== "#" && window.open(url, "_blank")}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-[#1CB0F6] group-hover:text-white transition-colors">
+                            <IconComponent size={24} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                              {title}
+                              <ExternalLink
+                                size={14}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400"
+                              />
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                              {description ||
+                                (!hasIcon
+                                  ? "백엔드에서 연동된 리소스입니다."
+                                  : "")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-full group-hover:bg-gray-100">
+                          <ArrowRight
+                            size={20}
+                            className="text-gray-400 group-hover:text-[#1CB0F6]"
+                          />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </motion.div>
