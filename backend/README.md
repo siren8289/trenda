@@ -31,11 +31,12 @@ docker compose up -d postgres    # PostgreSQL 먼저 실행 (필수)
 
 `docker-compose.yml` 에서 위 기본값에 맞는 PostgreSQL 컨테이너를 띄웁니다.
 
-### Render 배포
+### Render / Neon 등 배포
 
-1. Render에서 **PostgreSQL** 인스턴스 생성.
-2. 백엔드 Web Service에서 해당 DB를 **Connect** 하면 `DATABASE_URL` 이 자동 설정됨.
-3. 이 프로젝트는 `DATABASE_URL` 이 있으면 자동으로 JDBC로 변환해 사용함.
+- **Render**: PostgreSQL 인스턴스 생성 후 Web Service에서 **Connect** 하면 `DATABASE_URL` 자동 설정.
+- **Neon 등**: 대시보드에서 연결 문자열(Connection string)을 복사한 뒤, 배포 환경에 `DATABASE_URL` 로 설정.  
+  예: `postgresql://user:password@host/dbname?sslmode=require`  
+  이 프로젝트는 `DATABASE_URL` 이 있으면 자동으로 JDBC URL로 변환해 사용함.
 
 ## Useful Gradle commands
 
