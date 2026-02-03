@@ -18,6 +18,7 @@ spring:
     baseline-on-migrate: true
     schemas: public
 
+# Render: 반드시 $PORT 에 바인딩해야 "No open ports detected" 로 종료되지 않음. 로컬은 8080
 server:
   port: ${PORT:8080}
 

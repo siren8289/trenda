@@ -18,6 +18,11 @@ docker compose up -d postgres    # PostgreSQL 먼저 실행 (필수)
 
 `http://localhost:8080/swagger-ui.html` 또는 `/api/health` 로 동작 확인.
 
+### Render 배포 시 포트
+
+`application.yml` 에 `server.port: ${PORT:8080}` 가 있어서, Render 가 주는 `PORT` 환경 변수에 서버가 바인딩됩니다.  
+이 설정이 없으면 "No open ports detected" 로 서비스가 종료되므로, 배포 시 이 줄이 포함된 최신 코드가 반영됐는지 확인하세요.
+
 ## Configuration
 
 | Variable | Default | Purpose |
