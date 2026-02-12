@@ -44,3 +44,8 @@
   - 컨트롤러 단에서는 `ApiResponse` 를 일관된 포맷으로 사용 가능.
 - Datasource/CORS 설정은 프로파일과 마스킹을 통해 **보안·환경 분리**를 의식한 구조로 개선.
 
+## 4. OpenAPI 2.0 정렬
+
+- OpenAPI `openapi.yaml` 상단에 `tags`, `components.schemas.ApiResponse / ErrorResponse` 를 정의해, 공통 응답 래퍼와 에러 포맷을 문서 레벨에서 표준화했습니다.
+- 각 엔드포인트의 responses 가 `ApiResponse` / `ErrorResponse` 를 참조하도록 정리되어, GlobalExceptionHandler·CustomException·ApiResponse 설계와 스펙이 같은 규칙을 공유합니다.
+

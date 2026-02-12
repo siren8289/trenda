@@ -101,3 +101,8 @@
 | **보안** | userId는 인증에서 추출, URL 형식 검증, 내부 식별자 최소 노출 |
 
 이 순서대로 반영하면 Resource 도메인의 품질·유지보수성·확장성이 개선됨.
+
+## 9. OpenAPI 2.0 정렬
+
+- OpenAPI 경로 `/api/resources`, `/api/resources/{id}`, `/api/resources/search`를 정의해 목록 조회/생성/수정/삭제/검색 흐름을 문서로 고정했습니다.
+- 생성/수정 요청은 `ResourceCreateRequest`/`ResourceUpdateRequest` 스키마, 응답은 `Resource` 스키마 + 필요 시 `ApiResponse` 래퍼로 표현하여, 도메인 설계와 API 계약이 일관되게 유지되도록 했습니다.

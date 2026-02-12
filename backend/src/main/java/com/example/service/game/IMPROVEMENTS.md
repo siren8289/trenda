@@ -61,3 +61,8 @@
 - 게임 목록에 필터/정렬을 추가할 때 Pageable 확장만으로 대응 가능하고,
 - 게임 스펙 변경(필드 추가/삭제) 시 GameResponse/GameCreateRequest 중심으로 수정하여 영향 범위를 최소화할 수 있다.
 
+## 6. OpenAPI 2.0 정렬
+
+- OpenAPI 에서 `/api/play/games` 를 **deprecated** 경로로 남기고, 새 엔드포인트 `/api/games`, `/api/games/{id}` 를 정의해 게임 조회/생성/수정/삭제 흐름을 정리했습니다.
+- 생성/수정 요청은 `GameCreateRequest`/`GameUpdateRequest`, 응답은 `ApiResponse` 래퍼 + Game 관련 스키마를 사용하도록 명세하여, 실제 Game 도메인 코드와 API 문서가 같은 계약을 바라보도록 했습니다.
+

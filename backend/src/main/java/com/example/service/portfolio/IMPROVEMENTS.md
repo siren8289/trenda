@@ -72,3 +72,8 @@
 | **검증** | URL @URL/@Pattern, update 시 필수값·trim |
 
 이 순서대로 반영하면 Portfolio 도메인의 계층 분리·유지보수성·확장성이 개선됨.
+
+## 7. OpenAPI 2.0 정렬
+
+- 기존 `/api/portfolio`, `/api/portfolio/{userId}` 엔드포인트는 스펙에서 **deprecated** 로 남기고, 새 구조 `/api/users/{id}/portfolio`, `/api/portfolio/{portfolioId}` 를 추가해 생성/조회/수정/삭제를 나누었습니다.
+- 문서 상 요청/응답 스키마(`Portfolio`, `PortfolioCreateRequest`, `PortfolioUpdateRequest`)를 명시해, 실제 Controller/Service 및 DTO 설계와 API 계약이 같은 방향으로 유지되도록 했습니다.

@@ -74,3 +74,8 @@
 | **기능 추가** | Pageable·검색 DTO·getById/getUserEntity 분리로 확장 포인트 명확, 수정용 DTO 준비 |
 
 이 구조를 유지하면 “검색 조건 추가”, “수정 필드 추가”, “다른 도메인에서 사용자 정보 사용” 같은 변경이 **한 계층·한 DTO 단위**로 들어가기 쉬움.
+
+## 5. OpenAPI 2.0 정렬
+
+- OpenAPI `openapi.yaml` 에서 `/api/users`, `/api/users/{id}`, `/api/users/search` 등 User 관련 엔드포인트를 **현재 Controller/Service 구조에 맞게 정의**했습니다.
+- 목록 조회는 `Get all users (list / search)` 로, 생성/조회/수정/삭제는 각각 201/200/204 상태 코드와 `ApiResponse`/`ErrorResponse` 스키마로 명시해 **문서상 계약과 실제 구현이 일치**하도록 맞췄습니다.

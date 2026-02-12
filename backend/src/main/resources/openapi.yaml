@@ -1,23 +1,26 @@
 openapi: 3.0.3
+# ↑ OpenAPI 버전(=스펙 규칙). Swagger UI / Springdoc / Redoc 등이 이 버전에 맞춰 해석합니다.
+
 info:
   title: Trenda API
-  description: >
-    Design & Development major growth platform.
-    Includes project management, portfolio versioning,
-    skill analysis, trend interaction, and AI-driven insights.
-  version: 1.0.0
+  version: 2.0.0
+  # ↑ API 변경 이력 관리용(문서 버전). 실제 배포 버전/태그 정책과 맞추는 게 중요합니다.
+  description: Design & Development major growth platform
 
 servers:
   - url: https://api.trenda.app
-    description: Production
+    description: Production Server
   - url: http://localhost:8080
-    description: Local
+    description: Local Server
+  # ↑ 프론트는 이 base URL + path 를 합쳐 요청합니다.
+  #   예: https://api.trenda.app + /api/users
 
 tags:
+  # ↑ 기능별 “폴더/라벨”. Notion/Swagger에서 구분이 깔끔해집니다.
   - name: User
     description: 사용자 관리
   - name: Profile
-    description: 프로필 조회
+    description: 프로필 관리
   - name: Roadmap
     description: 로드맵 관리
   - name: Portfolio
@@ -31,55 +34,108 @@ tags:
   - name: Question
     description: 문제 관리
 
+# ------------------------------------------------------------
+# PATHS: 실제 API 엔드포인트 정의 구간
+# - summary: 기획/프론트/백엔드가 “이 API가 하는 일”을 한 줄로 합의하는 부분
+# - parameters: path/query/header 등 “요청에서 받는 입력”
+# - requestBody: POST/PATCH/PUT에서 “body로 받는 입력”
+# - responses: 상태코드별로 “반환 형식/스키마”
+# ------------------------------------------------------------
 paths:
 
+  # =========================
   # User APIs
+  # =========================
   /api/users:
     get:
       tags: [User]
-      summary: Get all users
+      summary: Get all users (list / search)
+      # ↑ 목록 조회 + 검색(필터링)을 query로 합친 구조(OCP에 유리)
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter by email
+          # ↑ 프론트는 필요할 때만 붙입니다. (예: ?email=test@a.com)
       responses:
-        '200':
-          description: User list
+        "200":
+          description: User list (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                ok:
+                  summary: Successful response
+                  value:
+                    success: true
+                    message: OK
+                    data:
+                      items:
+                        - id: 1
+                          email: a@a.com
+                          name: Alice
+                          major: Design
+                          createdAt: "2026-02-09T10:00:00Z"
+                      total: 1
+                      # ↑ 실무 팁: 목록은 items + total 형태를 추천(페이지네이션/검색 UX 때문)
+                      #   프론트는 items 렌더링 + total로 페이지 계산
+                      #   백엔드는 items/total를 일관되게 보장해야 함
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
     post:
       tags: [User]
       summary: Create user
+      # ↑ 생성(Create). 보통 201을 권장.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: "#/components/schemas/UserCreateRequest"
+            examples:
+              create:
+                value:
+                  email: "new@a.com"
+                  name: "New User"
+                  major: "Backend"
       responses:
-        '201':
-          description: User created
+        "201":
+          description: User created (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-
-  /api/users/search:
-    get:
-      tags: [User]
-      summary: Find user by email
-      parameters:
-        - name: email
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User info
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                created:
+                  value:
+                    success: true
+                    message: Created
+                    data:
+                      id: 10
+                      email: "new@a.com"
+                      name: "New User"
+                      major: "Backend"
+                      createdAt: "2026-02-09T10:00:00Z"
+        "409":
+          description: Duplicate email (conflict)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/{id}:
     get:
@@ -91,68 +147,236 @@ paths:
           required: true
           schema:
             type: integer
-            format: int64
+          description: User ID
+          # ↑ 프론트 라우팅(/users/123)과 자주 연결됨
       responses:
-        '200':
-          description: User info
+        "200":
+          description: User detail (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                ok:
+                  value:
+                    success: true
+                    message: OK
+                    data:
+                      id: 1
+                      email: "a@a.com"
+                      name: "Alice"
+                      major: "Design"
+                      createdAt: "2026-02-09T10:00:00Z"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
+    patch:
+      tags: [User]
+      summary: Update user (partial)
+      # ↑ PATCH는 “부분 수정”. 프론트는 바뀐 필드만 보내는게 이상적.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateRequest"
+            examples:
+              patch:
+                value:
+                  name: "Alice Kim"
+                  major: "Product"
+      responses:
+        "200":
+          description: User updated (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [User]
+      summary: Delete user
+      # ↑ 삭제는 보통 body 없이 204가 깔끔함
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # (DEPRECATED) 옛 검색 API: 유지하되 더 이상 확장하지 않는다는 합의 표시
+  /api/users/search:
+    get:
+      tags: [User]
+      summary: Find user by email (DEPRECATED)
+      deprecated: true
+      # ↑ Swagger UI에서 “deprecated” 배지로 표시됨(프론트에게 ‘쓰지마’ 시그널)
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email to search
+      responses:
+        "200":
+          description: Search result (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # =========================
   # Profile APIs
+  # =========================
   /api/profile/{userId}:
+    get:
+      tags: [Profile]
+      summary: Get user profile (DEPRECATED)
+      deprecated: true
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Profile (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /api/users/{id}/profile:
     get:
       tags: [Profile]
       summary: Get user profile
       parameters:
-        - name: userId
+        - name: id
           in: path
           required: true
           schema:
             type: integer
-            format: int64
+          description: User ID
       responses:
-        '200':
-          description: Profile info
+        "200":
+          description: Profile detail (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                ok:
+                  value:
+                    success: true
+                    message: OK
+                    data:
+                      userId: 1
+                      bio: "Hello"
+                      imageUrl: "https://cdn.example.com/a.png"
+        "404":
+          description: User/Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
+    patch:
+      tags: [Profile]
+      summary: Update user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+            examples:
+              patch:
+                value:
+                  bio: "Updated bio"
+                  imageUrl: "https://cdn.example.com/new.png"
+      responses:
+        "200":
+          description: Profile updated (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # =========================
   # Roadmap APIs
+  # =========================
   /api/roadmap/{userId}:
     get:
       tags: [Roadmap]
-      summary: Get user roadmaps
+      summary: Get user roadmaps (DEPRECATED)
+      deprecated: true
       parameters:
         - name: userId
           in: path
           required: true
           schema:
             type: integer
-            format: int64
       responses:
-        '200':
+        "200":
           description: Roadmap list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Roadmap'
+                  $ref: "#/components/schemas/Roadmap"
 
   /api/roadmap:
     post:
       tags: [Roadmap]
-      summary: Create roadmap
+      summary: Create roadmap (DEPRECATED - query based)
+      deprecated: true
+      # ↑ Query로 title/content 받는 방식은 필드 확장에 취약(OCP 문제). Body로 이동 권장.
       parameters:
         - name: userId
           in: query
           required: true
           schema:
             type: integer
-            format: int64
         - name: title
           in: query
           required: true
@@ -164,44 +388,134 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "201":
           description: Roadmap created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Roadmap'
+                $ref: "#/components/schemas/Roadmap"
 
+  /api/users/{id}/roadmaps:
+    get:
+      tags: [Roadmap]
+      summary: Get user roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      responses:
+        "200":
+          description: Roadmap list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Roadmap"
+
+    post:
+      tags: [Roadmap]
+      summary: Create roadmap
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoadmapCreateRequest"
+      responses:
+        "201":
+          description: Roadmap created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roadmap"
+
+  /api/roadmaps/{roadmapId}:
+    patch:
+      tags: [Roadmap]
+      summary: Update roadmap
+      parameters:
+        - name: roadmapId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoadmapUpdateRequest"
+      responses:
+        "200":
+          description: Roadmap updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roadmap"
+        "404":
+          description: Roadmap not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Roadmap]
+      summary: Delete roadmap
+      parameters:
+        - name: roadmapId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
+  # =========================
   # Portfolio APIs
+  # =========================
   /api/portfolio/{userId}:
     get:
       tags: [Portfolio]
-      summary: Get user portfolio
+      summary: Get user portfolio (DEPRECATED)
+      deprecated: true
       parameters:
         - name: userId
           in: path
           required: true
           schema:
             type: integer
-            format: int64
       responses:
-        '200':
-          description: Portfolio info
+        "200":
+          description: Portfolio
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Portfolio'
+                $ref: "#/components/schemas/Portfolio"
 
   /api/portfolio:
     post:
       tags: [Portfolio]
-      summary: Create or update portfolio
+      summary: Create/update portfolio (DEPRECATED - SRP violation)
+      deprecated: true
+      # ↑ 하나의 POST가 생성/수정을 동시에 처리하는 건 SRP 위반 소지가 큼
       parameters:
         - name: userId
           in: query
           required: true
           schema:
             type: integer
-            format: int64
         - name: title
           in: query
           required: true
@@ -213,100 +527,236 @@ paths:
           schema:
             type: string
       responses:
-        '201':
+        "200":
+          description: Portfolio created/updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+
+  /api/users/{id}/portfolio:
+    get:
+      tags: [Portfolio]
+      summary: Get user portfolio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Portfolio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+        "404":
+          description: Portfolio not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags: [Portfolio]
+      summary: Create portfolio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioCreateRequest"
+      responses:
+        "201":
           description: Portfolio created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Portfolio'
+                $ref: "#/components/schemas/Portfolio"
 
+  /api/portfolio/{portfolioId}:
+    patch:
+      tags: [Portfolio]
+      summary: Update portfolio
+      parameters:
+        - name: portfolioId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioUpdateRequest"
+      responses:
+        "200":
+          description: Portfolio updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+
+    delete:
+      tags: [Portfolio]
+      summary: Delete portfolio
+      parameters:
+        - name: portfolioId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
+  # =========================
   # Resource APIs
+  # =========================
   /api/resources:
     get:
       tags: [Resource]
-      summary: Get all resources
+      summary: Get all resources (list / search)
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter by category
       responses:
-        '200':
+        "200":
           description: Resource list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Resource'
+                  $ref: "#/components/schemas/Resource"
 
     post:
       tags: [Resource]
       summary: Create resource
-      parameters:
-        - name: title
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: url
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: category
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: description
-          in: query
-          required: true
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceCreateRequest"
       responses:
-        '201':
+        "201":
           description: Resource created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
+                $ref: "#/components/schemas/Resource"
 
   /api/resources/search:
     get:
       tags: [Resource]
-      summary: Search resources by category
+      summary: Search by category (DEPRECATED)
+      deprecated: true
       parameters:
         - name: category
           in: query
           required: true
           schema:
             type: string
-            example: VIDEO
       responses:
-        '200':
-          description: Filtered resource list
+        "200":
+          description: Resource list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Resource'
+                  $ref: "#/components/schemas/Resource"
 
-  # Play Record APIs
+  /api/resources/{id}:
+    patch:
+      tags: [Resource]
+      summary: Update resource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceUpdateRequest"
+      responses:
+        "200":
+          description: Resource updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+
+    delete:
+      tags: [Resource]
+      summary: Delete resource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
+  # =========================
+  # Play APIs
+  # =========================
   /api/play/records/user/{userId}:
     get:
       tags: [Play]
-      summary: Get user play records
+      summary: Get user play records (DEPRECATED)
+      deprecated: true
       parameters:
         - name: userId
           in: path
           required: true
           schema:
             type: integer
-            format: int64
       responses:
-        '200':
-          description: Play record list
+        "200":
+          description: Play record list (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
+
+  /api/users/{id}/play-records:
+    get:
+      tags: [Play]
+      summary: Get user play records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Play record list (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+      # ↑ 여기서 ApiResponse.data 구조(배열/객체/페이지정보)를 “정확히” 합의해야 LSP 문제를 해결함
 
   /api/play/records:
     post:
@@ -317,27 +767,60 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PlayRecordRequest'
+              $ref: "#/components/schemas/PlayRecordRequest"
       responses:
-        '201':
-          description: Record saved
+        "201":
+          description: Play record saved (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
 
+  # =========================
   # Game APIs
+  # =========================
   /api/play/games:
+    get:
+      tags: [Game]
+      summary: Get all games (DEPRECATED)
+      deprecated: true
+      responses:
+        "200":
+          description: Game list (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    post:
+      tags: [Game]
+      summary: Create game (DEPRECATED)
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameCreateRequest"
+      responses:
+        "201":
+          description: Game created (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /api/games:
     get:
       tags: [Game]
       summary: Get all games
       responses:
-        '200':
-          description: Game list
+        "200":
+          description: Game list (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
+              # ↑ data를 list로 둘지, {items,total}로 둘지 합의 포인트
 
     post:
       tags: [Game]
@@ -347,174 +830,394 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Game'
+              $ref: "#/components/schemas/GameCreateRequest"
       responses:
-        '201':
-          description: Game created
+        "201":
+          description: Game created (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
 
+  /api/games/{id}:
+    patch:
+      tags: [Game]
+      summary: Update game
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameUpdateRequest"
+      responses:
+        "200":
+          description: Game updated (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    delete:
+      tags: [Game]
+      summary: Delete game
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
+  # =========================
   # Question APIs
+  # =========================
   /api/play/questions/game/{gameId}:
     get:
       tags: [Question]
-      summary: Get questions by game
+      summary: Get questions by game (DEPRECATED)
+      deprecated: true
       parameters:
         - name: gameId
           in: path
           required: true
           schema:
             type: integer
-            format: int64
       responses:
-        '200':
-          description: Question list
+        "200":
+          description: Question list (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
 
   /api/play/questions:
     post:
       tags: [Question]
-      summary: Create question
+      summary: Create question (DEPRECATED)
+      deprecated: true
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Question'
+              $ref: "#/components/schemas/QuestionCreateRequest"
       responses:
-        '201':
-          description: Question created
+        "201":
+          description: Question created (wrapped)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: "#/components/schemas/ApiResponse"
 
+  /api/games/{id}/questions:
+    get:
+      tags: [Question]
+      summary: Get questions by game
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Game ID
+      responses:
+        "200":
+          description: Question list (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    post:
+      tags: [Question]
+      summary: Create question under game
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Game ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionCreateRequest"
+      responses:
+        "201":
+          description: Question created (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /api/questions/{id}:
+    patch:
+      tags: [Question]
+      summary: Update question
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionUpdateRequest"
+      responses:
+        "200":
+          description: Question updated (wrapped)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    delete:
+      tags: [Question]
+      summary: Delete question
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
+# ------------------------------------------------------------
+# COMPONENTS: 재사용 가능한 스키마/공통 응답 정의
+# - 프론트/백엔드가 가장 많이 충돌나는 구간이 여기입니다:
+#   "data가 배열이야? 객체야? 페이지 정보는?"
+# ------------------------------------------------------------
 components:
-
   schemas:
 
     ApiResponse:
       type: object
+      description: Common API wrapper response
       properties:
         success:
           type: boolean
+          description: Whether request succeeded
         data:
           type: object
+          description: Actual payload (MUST be consistent per endpoint)
+          # ↑ 중요: endpoint마다 data 구조가 달라지면 프론트는 분기 지옥(LSP 위반)
+          #   해결책:
+          #   1) 엔드포인트별 ApiResponse<User>, ApiResponse<UserList> 식으로 분리
+          #   2) 혹은 data에 oneOf를 사용해서 명세에 “가능한 형태”를 정확히 적기
         message:
           type: string
+          description: Human readable message
+      required: [success, message, data]
 
+    ErrorResponse:
+      type: object
+      description: Standard error envelope (recommended)
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        errors:
+          type: array
+          description: Field level errors (optional)
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              reason:
+                type: string
+                example: must be a valid email
+      required: [success, message, code]
+
+    # -----------------------
+    # Domain Schemas (DB 모델과 1:1로 고정하지 말고 "API 계약"으로 보세요)
+    # -----------------------
     User:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        email:
-          type: string
-        name:
-          type: string
-        major:
-          type: string
+        id: { type: integer }
+        email: { type: string }
+        name: { type: string }
+        major: { type: string }
         createdAt:
           type: string
           format: date-time
+      required: [id, email, name, major, createdAt]
+
+    # 생성 요청: id/createdAt는 클라이언트가 만들지 않으므로 분리(권장)
+    UserCreateRequest:
+      type: object
+      properties:
+        email: { type: string }
+        name: { type: string }
+        major: { type: string }
+      required: [email, name, major]
+
+    # 업데이트 요청: PATCH는 부분 수정이므로 required를 최소화(권장)
+    UserUpdateRequest:
+      type: object
+      properties:
+        email: { type: string }
+        name: { type: string }
+        major: { type: string }
+
+    Profile:
+      type: object
+      properties:
+        userId: { type: integer }
+        bio: { type: string }
+        imageUrl: { type: string }
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        bio: { type: string }
+        imageUrl: { type: string }
 
     Roadmap:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        userId:
-          type: integer
-          format: int64
-        title:
-          type: string
-        content:
-          type: string
+        id: { type: integer }
+        userId: { type: integer }
+        title: { type: string }
+        content: { type: string }
         createdAt:
           type: string
           format: date-time
+
+    RoadmapCreateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        content: { type: string }
+      required: [title, content]
+
+    RoadmapUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        content: { type: string }
 
     Portfolio:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        userId:
-          type: integer
-          format: int64
-        title:
-          type: string
-        summary:
-          type: string
+        id: { type: integer }
+        userId: { type: integer }
+        title: { type: string }
+        summary: { type: string }
         createdAt:
           type: string
           format: date-time
 
+    PortfolioCreateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        summary: { type: string }
+      required: [title, summary]
+
+    PortfolioUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        summary: { type: string }
+
     Resource:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        title:
-          type: string
-          description: 자료 제목
-        url:
-          type: string
-          description: 링크 주소
-        category:
-          type: string
-          description: 카테고리 (VIDEO, BLOG, DOC)
-          example: VIDEO
-        description:
-          type: string
-          description: 자료 설명
+        id: { type: integer }
+        title: { type: string }
+        url: { type: string }
+        category: { type: string }
+        description: { type: string }
+
+    ResourceCreateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        url: { type: string }
+        category: { type: string }
+        description: { type: string }
+      required: [title, url, category]
+
+    ResourceUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        url: { type: string }
+        category: { type: string }
+        description: { type: string }
 
     PlayRecordRequest:
       type: object
-      required: [userId, gameId, score]
       properties:
-        userId:
-          type: integer
-          format: int64
-        gameId:
-          type: integer
-          format: int64
-        score:
-          type: integer
-          minimum: 0
+        userId: { type: integer }
+        gameId: { type: integer }
+        score: { type: integer }
+      required: [userId, gameId, score]
 
     Game:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        title:
-          type: string
-        description:
-          type: string
-        difficulty:
-          type: string
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        difficulty: { type: string }
+
+    GameCreateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        difficulty: { type: string }
+      required: [title, difficulty]
+
+    GameUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        difficulty: { type: string }
 
     Question:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        gameId:
-          type: integer
-          format: int64
-        content:
-          type: string
-        answer:
-          type: string
+        id: { type: integer }
+        gameId: { type: integer }
+        content: { type: string }
+        answer: { type: string }
+
+    QuestionCreateRequest:
+      type: object
+      properties:
+        content: { type: string }
+        answer: { type: string }
+      required: [content, answer]
+
+    QuestionUpdateRequest:
+      type: object
+      properties:
+        content: { type: string }
+        answer: { type: string }

@@ -24,3 +24,8 @@
 ## 6. Profile 테이블 준비
 - 기존 플레이스홀더에서 **실제 JPA Entity**로 전환. `userId` unique, `nickname`/`bio`/`imageUrl` 필드.
 - 프로필 전용 데이터(닉네임, 소개, 이미지) 확장 시 이 엔티티와 Repository 활용 가능.
+
+## 7. OpenAPI 2.0 정렬
+
+- OpenAPI 스펙에서 `/api/profile/{userId}` 를 **deprecated** 처리하고, 새 경로 `/api/users/{id}/profile` 을 추가해 User 리소스 하위에 Profile 을 매달았습니다.
+- 응답은 `ApiResponse` 래퍼 + Profile 스키마를 사용하게 정의해, 실제 `ProfileController`/`ProfileResponse` 구조와 문서가 동일한 형태를 갖도록 맞췄습니다.
