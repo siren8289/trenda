@@ -153,7 +153,14 @@ export function ProfileView({ onNavigate, user }: ProfileViewProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {activeTab === "dashboard" && <DashboardView onNavigate={onNavigate} />}
+              {activeTab === "dashboard" && (
+                <DashboardView
+                  onNavigate={onNavigate}
+                  playRecords={profile?.playRecords ?? []}
+                  portfolios={profile?.portfolios ?? []}
+                  roadmaps={profile?.roadmaps ?? []}
+                />
+              )}
               {activeTab === "report" && <WeeklyReportView />}
               {activeTab === "skill" && <SkillProgressView />}
               {activeTab === "settings" && <SettingsView onNavigate={onNavigate} />}
