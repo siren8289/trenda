@@ -1,16 +1,22 @@
 package com.example.service.game.controller;
 
 import com.example.service.common.response.ApiResponse;
-import com.example.service.game.entity.Game;
+import com.example.service.game.dto.GameCreateRequest;
+import com.example.service.game.dto.GameResponse;
 import com.example.service.game.service.GameService;
 import jakarta.validation.Valid;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 게임 API 컨트롤러.
+ * - HTTP 입출력만 담당하고, 비즈니스 로직·Entity 타입은 Service/Domain 에 위임한다.
+ */
 @RestController
 @RequestMapping("/api/play/games")
 public class GameController {
@@ -21,14 +27,16 @@ public class GameController {
         this.gameService = gameService;
     }
 
+    /** 게임 목록 조회. Pageable 기반, Service 가 DTO 를 반환하도록 위임. */
     @GetMapping
-    public ApiResponse<List<Game>> list() {
-        return ApiResponse.success(gameService.findAll());
+    public ApiResponse<Page<GameResponse>> list(Pageable pageable) {
+        return ApiResponse.success(gameService.findAll(pageable));
     }
 
+    /** 게임 생성. Request DTO만 받고, 응답은 GameResponse DTO로 고정. */
     @PostMapping
-    public ApiResponse<Game> create(@Valid @RequestBody Game game) {
-        return ApiResponse.success(gameService.save(game));
+    public ApiResponse<GameResponse> create(@Valid @RequestBody GameCreateRequest request) {
+        return ApiResponse.success(gameService.create(request));
     }
 }
 

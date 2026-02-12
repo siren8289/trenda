@@ -1,22 +1,20 @@
 package com.example.service.game.dto;
 
 import com.example.service.game.entity.Game;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+/**
+ * 게임 조회 응답 DTO.
+ * - Entity 를 숨기고 API 응답 스펙만 표현한다.
+ */
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class GameResponse {
 
-    private Long id;
-    private String title;
-    private String description;
+    private final Long id;
+    private final String title;
+    private final String description;
 
     public static GameResponse from(Game game) {
         if (game == null) {
